@@ -1,0 +1,53 @@
+name: Generate Unifont-T hex
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/generate-unifont-t.yml
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      UNIFONT_VERSION: 18.0.01
+      UNIFONT_URL: https://unifoundry.com/pub/unifont/unifont-18.0.01/font-builds
+
+    steps:
+      - name: Download source fonts
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error \
+            "$UNIFONT_URL/unifont-${UNIFONT_VERSION}.hex.gz" \
+            --output unifont.hex.gz
+          curl --fail --location --retry 3 --silent --show-error \
+            "$UNIFONT_URL/unifont_t-${UNIFONT_VERSION}.hex.gz" \
+            --output unifont_t.hex.gz
+          gzip --decompress unifont.hex.gz
+          gzip --decompress unifont_t.hex.gz
+
+      - name: Generate lines unique to Unifont-T
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="assets/minecraft/font/unifont_t-${UNIFONT_VERSION}.hex"
+          mkdir --parents "$(dirname "$output")"
+
+          LC_ALL=C awk '
+            NR == FNR { base[$0] = 1; next }
+            !base[$0]
+          ' unifont.hex unifont_t.hex > "$output"
+
+          test -s "$output"
+          printf 'Generated %s lines in %s\n' "$(wc --lines < "$output")" "$output"
+
+      - name: Upload generated hex file
+        uses: actions/upload-artifact@v4
+        with:
+          name: unifont-t-${{ env.UNIFONT_VERSION }}-hex
+          path: assets/minecraft/font/unifont_t-${{ env.UNIFONT_VERSION }}.hex
+          if-no-files-found: error
