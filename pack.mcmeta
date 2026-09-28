@@ -4,6 +4,6 @@
     "min_format": 15,
     "max_format": [97, 1],
     "supported_formats": {"min_inclusive": 15, "max_inclusive": 97},
-    "description": "Unifont-T 17.0.04"
+    "description": "Unifont-T 18.0.01"
   }
 }
